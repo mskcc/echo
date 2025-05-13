@@ -6,12 +6,13 @@ services:
       context: .
       dockerfile: Dockerfile.api # Save API Dockerfile as Dockerfile.api
     ports:
-      - "8080:8080"
+      - ${SERVER_PORT}:${SERVER_PORT}
     environment:
       - RABBITMQ_URL=${RABBITMQ_URL}
       - API_TOKEN=${API_TOKEN}
       - FILE_COPY_QUEUE=${FILE_COPY_QUEUE}
       - CONFIRMATION_QUEUE=${CONFIRMATION_QUEUE}
+      - SERVER_PORT=${SERVER_PORT}
 
   worker:
     build:
