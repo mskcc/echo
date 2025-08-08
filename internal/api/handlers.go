@@ -55,7 +55,8 @@ func copyHandler(c *gin.Context, cfg *config.Config) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to accept request with id: %s", fileTask.ID.String())})
 		return
 	}
-	c.JSON(http.StatusAccepted, gin.H{"message": fmt.Sprintf("File copy request accepted with id: %s", fileTask.ID.String())})
+	c.JSON(http.StatusAccepted, gin.H{"id": fileTask.ID.String(), "task": worker.TaskCopy,
+		"message": fmt.Sprintf("File copy request accepted with id: %s", fileTask.ID.String())})
 }
 
 func deleteHandler(c *gin.Context, cfg *config.Config) {
@@ -81,7 +82,8 @@ func deleteHandler(c *gin.Context, cfg *config.Config) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to accept request with id: %s", fileTask.ID.String())})
 		return
 	}
-	c.JSON(http.StatusAccepted, gin.H{"message": fmt.Sprintf("Delete file request accepted with id: %s", fileTask.ID.String())})
+	c.JSON(http.StatusAccepted, gin.H{"id": fileTask.ID.String(), "task": worker.TaskDelete,
+		"message": fmt.Sprintf("Delete file request accepted with id: %s", fileTask.ID.String())})
 }
 
 func SetupRouter(cfg *config.Config) *gin.Engine {
