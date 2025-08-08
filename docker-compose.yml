@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api # Save API Dockerfile as Dockerfile.api
+    ports:
+      - ${SERVER_PORT}:${SERVER_PORT}
+    environment:
+      - RABBITMQ_URL=${RABBITMQ_URL}
+      - API_TOKEN=${API_TOKEN}
+      - FILE_COPY_QUEUE=${FILE_COPY_QUEUE}
+      - CONFIRMATION_QUEUE=${CONFIRMATION_QUEUE}
+      - SERVER_PORT=${SERVER_PORT}
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker # Save Worker Dockerfile as Dockerfile.worker
+    environment:
+      - RABBITMQ_URL=${RABBITMQ_URL}
+      - API_TOKEN=${API_TOKEN}
+      - FILE_COPY_QUEUE=${FILE_COPY_QUEUE}
+      - CONFIRMATION_QUEUE=${CONFIRMATION_QUEUE}
+      - NUMBER_OF_WORKERS=${NUMBER_OF_WORKERS}
+
