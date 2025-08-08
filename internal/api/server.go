@@ -10,8 +10,7 @@ import (
 func StartServer(cfg *config.Config) error {
 	// Set up the Gin router
 	router := SetupRouter(cfg)
-
 	// Start the server
-	log.Println("API Service started on :8080")
-	return router.Run(":8080")
+	log.Println("API Service started on :" + cfg.Port)
+	return router.Run(":" + cfg.Port)
 }

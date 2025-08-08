@@ -12,6 +12,5 @@ FROM alpine:3.18
 WORKDIR /app
 RUN apk add --no-cache ca-certificates tzdata
 COPY --from=builder /bin/worker /app/worker
-COPY --from=builder /app/internal/config /app/internal/config
 
 ENTRYPOINT ["/app/worker"]

@@ -1,0 +1,32 @@
+# Build stage
+FROM golang:1.24.3-alpine AS builder
+WORKDIR /app
+
+# Download dependencies first (better layer caching)
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build -ldflags="-w -s" -o /bin/api ./cmd/api/main.go
+
+# Runtime stage
+FROM alpine:3.18
+WORKDIR /app
+
+# Install CA certificates for HTTPS
+RUN apk add --no-cache ca-certificates tzdata
+
+# Copy binary and configs from builder
+COPY --from=builder /bin/api /app/api
+COPY --from=builder /app/internal/config /app/internal/config
+
+# Health check (adjust if you have a /health endpoint)
+HEALTHCHECK --interval=30s --timeout=3s \
+    CMD wget -qO- --header="Authorization: Bearer ${API_TOKEN}" http://localhost:${SERVER_PORT}/status || exit 1
+
+EXPOSE ${SERVER_PORT}
+ENTRYPOINT ["/app/api"]

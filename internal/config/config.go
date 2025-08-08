@@ -11,6 +11,7 @@ type Config struct {
 	TaskQueue         string
 	ConfirmationQueue string
 	NumberOfWorkers   int
+	Port              string
 }
 
 func Load() (*Config, error) {
@@ -20,6 +21,7 @@ func Load() (*Config, error) {
 		TaskQueue:         getEnv("FILE_TASK_QUEUE", "file_task_queue"),
 		ConfirmationQueue: getEnv("CONFIRMATION_QUEUE", "file_copy_confirmation_queue"),
 		NumberOfWorkers:   getEnvInt("NUMBER_OF_WORKERS", 10),
+		Port:              getEnv("SERVER_PORT", "8080"),
 	}, nil
 }
 
