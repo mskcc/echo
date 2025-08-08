@@ -8,7 +8,7 @@ import (
 type Config struct {
 	RabbitMQURL       string
 	APIToken          string
-	FileCopyQueue     string
+	TaskQueue         string
 	ConfirmationQueue string
 	NumberOfWorkers   int
 }
@@ -17,7 +17,7 @@ func Load() (*Config, error) {
 	return &Config{
 		RabbitMQURL:       getEnv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"),
 		APIToken:          getEnv("API_TOKEN", "your-secure-api-token"),
-		FileCopyQueue:     getEnv("FILE_COPY_QUEUE", "file_copy_queue"),
+		TaskQueue:         getEnv("FILE_TASK_QUEUE", "file_task_queue"),
 		ConfirmationQueue: getEnv("CONFIRMATION_QUEUE", "file_copy_confirmation_queue"),
 		NumberOfWorkers:   getEnvInt("NUMBER_OF_WORKERS", 10),
 	}, nil

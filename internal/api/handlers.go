@@ -3,11 +3,14 @@ package api
 import (
 	"echo/internal/config"
 	"echo/internal/rabbitmq"
+	"echo/internal/worker"
 	"encoding/json"
 	"fmt"
+	"log"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"net/http"
 )
 
 func statusHandler(c *gin.Context, cfg *config.Config) {
@@ -15,15 +18,12 @@ func statusHandler(c *gin.Context, cfg *config.Config) {
 }
 
 type CopyRequest struct {
-	ID              uuid.UUID `json:"id"`
-	SourcePath      string    `json:"source_path"`
-	DestinationPath string    `json:"destination_path"`
+	Source      string `json:"source"`
+	Destination string `json:"destination"`
 }
 
-func (r *CopyRequest) EnsureID() {
-	if r.ID == uuid.Nil {
-		r.ID = uuid.New()
-	}
+type DeleteRequest struct {
+	Source string `json:"source"`
 }
 
 func copyHandler(c *gin.Context, cfg *config.Config) {
@@ -33,19 +33,55 @@ func copyHandler(c *gin.Context, cfg *config.Config) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
-	req.EnsureID()
+
+	// Create FileTask
+	fileTask := worker.FileTask{
+		ID:          uuid.New(),
+		Type:        worker.TaskCopy,
+		Source:      req.Source,
+		Destination: req.Destination,
+	}
+
+	log.Println(fileTask)
+
 	// Publish the request to RabbitMQ
-	body, err := json.Marshal(req)
+	body, err := json.Marshal(fileTask)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to serialize request"})
 		return
 	}
 
-	if err := rabbitmq.Publish(cfg.RabbitMQURL, cfg.FileCopyQueue, body); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to accept request with id: %s", req.ID.String())})
+	if err := rabbitmq.Publish(cfg.RabbitMQURL, cfg.TaskQueue, body); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to accept request with id: %s", fileTask.ID.String())})
 		return
 	}
-	c.JSON(http.StatusAccepted, gin.H{"message": fmt.Sprintf("File copy request accepted with id: %s", req.ID.String())})
+	c.JSON(http.StatusAccepted, gin.H{"message": fmt.Sprintf("File copy request accepted with id: %s", fileTask.ID.String())})
+}
+
+func deleteHandler(c *gin.Context, cfg *config.Config) {
+	var req DeleteRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	// Create FileTask
+	fileTask := worker.FileTask{
+		ID:     uuid.New(),
+		Type:   worker.TaskDelete,
+		Source: req.Source,
+	}
+
+	body, err := json.Marshal(fileTask)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to serialize request"})
+		return
+	}
+	if err := rabbitmq.Publish(cfg.RabbitMQURL, cfg.TaskQueue, body); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to accept request with id: %s", fileTask.ID.String())})
+		return
+	}
+	c.JSON(http.StatusAccepted, gin.H{"message": fmt.Sprintf("Delete file request accepted with id: %s", fileTask.ID.String())})
 }
 
 func SetupRouter(cfg *config.Config) *gin.Engine {
@@ -56,6 +92,9 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	})
 	router.POST("/copy", func(c *gin.Context) {
 		copyHandler(c, cfg)
+	})
+	router.POST("/delete", func(c *gin.Context) {
+		deleteHandler(c, cfg)
 	})
 	return router
 }
