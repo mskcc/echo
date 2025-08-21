@@ -5,40 +5,55 @@ import (
 	"echo/internal/rabbitmq"
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/google/uuid"
 )
 
-type CopyFileResponse struct {
+type TaskResponse struct {
 	ID      uuid.UUID `json:"id"`
 	Status  string    `json:"status"`
 	Message string    `json:"message"`
 }
 
-func copyWorkerService(id uuid.UUID, cfg *config.Config, jobs <-chan CopyFileRequest, wg *sync.WaitGroup) {
+func workerService(id uuid.UUID, cfg *config.Config, jobs <-chan FileTask, wg *sync.WaitGroup) {
 	defer wg.Done()
 	log.Printf("Worker %s started", id.String())
 	for req := range jobs {
-		log.Printf("Worker %s is processing file copy: %s -> %s", id, req.SourcePath, req.DestinationPath)
-
+		log.Printf("Worker %s is processing task type %s", id, req.Type)
 		var status string
 		var message string
-		if err := copyFile(req.SourcePath, req.DestinationPath); err != nil {
-			log.Printf("Failed to copy file: %v", err)
-			status = "fail"
-			message = fmt.Sprintf("Failed to copy file: %s -> %s", req.SourcePath, req.DestinationPath)
-		} else {
-			log.Printf("File copied successfully: %s -> %s", req.SourcePath, req.DestinationPath)
-			status = "success"
-			message = fmt.Sprintf("File copied successfully: %s -> %s", req.SourcePath, req.DestinationPath)
+		switch req.Type {
+
+		case TaskCopy:
+
+			if err := copyFile(req.Source, req.Destination); err != nil {
+				log.Printf("Failed to copy file: %v", err)
+				status = "fail"
+				message = fmt.Sprintf("Failed to copy file: %s -> %s", req.Source, req.Destination)
+			} else {
+				log.Printf("File copied successfully: %s -> %s", req.Source, req.Destination)
+				status = "success"
+				message = fmt.Sprintf("File copied successfully: %s -> %s", req.Source, req.Destination)
+			}
+		case TaskDelete:
+			if err := deleteFile(req.Source); err != nil {
+				log.Printf("Failed to delete file: %v", err)
+				status = "fail"
+				message = fmt.Sprintf("Failed to delete file: %s", req.Source)
+			} else {
+				log.Printf("File deleted successfully: %s", req.Source)
+				status = "success"
+				message = fmt.Sprintf("File deleted successfully: %s", req.Source)
+			}
 		}
 
 		// Publish response back to RabbitMQ
-		msg := CopyFileResponse{
+		msg := TaskResponse{
 			ID:      req.ID,
 			Status:  status,
 			Message: message,
@@ -75,4 +90,11 @@ func copyFile(src, dst string) error {
 
 	_, err = io.Copy(destinationFile, sourceFile)
 	return err
+}
+
+func deleteFile(src string) error {
+	if err := os.Remove(src); err != nil {
+		return err
+	}
+	return nil
 }

@@ -4,18 +4,27 @@ import (
 	"echo/internal/config"
 	"echo/internal/rabbitmq"
 	"encoding/json"
-	"github.com/google/uuid"
 	"log"
 	"sync"
+
+	"github.com/google/uuid"
 )
 
-type CopyFileRequest struct {
-	ID              uuid.UUID `json:"id"`
-	SourcePath      string    `json:"source_path"`
-	DestinationPath string    `json:"destination_path"`
+type TaskType string
+
+const (
+	TaskCopy   TaskType = "COPY"
+	TaskDelete TaskType = "DELETE"
+)
+
+type FileTask struct {
+	ID          uuid.UUID `json:"id"`
+	Type        TaskType  `json:"type"` // COPY or DELETE
+	Source      string    `json:"source"`
+	Destination string    `json:"destination,omitempty"` // Only needed for COPY
 }
 
-func (r *CopyFileRequest) EnsureID() {
+func (r *FileTask) EnsureID() {
 	if r.ID == uuid.Nil {
 		r.ID = uuid.New()
 	}
@@ -23,7 +32,7 @@ func (r *CopyFileRequest) EnsureID() {
 
 func Start(cfg *config.Config) error {
 	// Connect to RabbitMQ
-	msgs, err := rabbitmq.Consume(cfg.RabbitMQURL, cfg.FileCopyQueue)
+	msgs, err := rabbitmq.Consume(cfg.RabbitMQURL, cfg.TaskQueue)
 	if err != nil {
 		return err
 	}
@@ -31,17 +40,17 @@ func Start(cfg *config.Config) error {
 	log.Println("Worker Service started. Waiting for messages...")
 
 	var wg sync.WaitGroup
-	jobs := make(chan CopyFileRequest, cfg.NumberOfWorkers) // Buffered channel for worker pool
+	jobs := make(chan FileTask, cfg.NumberOfWorkers) // Buffered channel for worker pool
 
 	// Launch multiple workers
 	for i := 0; i < cfg.NumberOfWorkers; i++ {
 		wg.Add(1)
-		go copyWorkerService(uuid.New(), cfg, jobs, &wg)
+		go workerService(uuid.New(), cfg, jobs, &wg)
 	}
 
 	// Read messages and send to workers
 	for msg := range msgs {
-		var req CopyFileRequest
+		var req FileTask
 		if err := json.Unmarshal(msg.Body, &req); err != nil {
 			log.Printf("Failed to decode message: %v", err)
 			continue
