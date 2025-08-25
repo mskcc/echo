@@ -1,6 +1,7 @@
 # Echo - Copy Service
 
-The Echo is a the application used for coping files from one location to another. You can comunicate with the service using RabbitMQ or Rest API.
+Echo is an application for copying files from one location to another.
+It provides two ways to communicate with the service: RabbitMQ or a REST API.
 
 ## Usage
 
@@ -53,8 +54,6 @@ Response 202
 ```
 
 ### RabbitMQ Messages
-
-You can also submit COPY and DELETE requests
 
 Copy Message
 
