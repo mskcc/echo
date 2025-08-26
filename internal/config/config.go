@@ -1,6 +1,8 @@
 package config
 
 import (
+	"io"
+	"log"
 	"os"
 	"strconv"
 )
@@ -12,6 +14,7 @@ type Config struct {
 	ConfirmationQueue string
 	NumberOfWorkers   int
 	Port              string
+	LogFilePath       string
 }
 
 func Load() (*Config, error) {
@@ -22,6 +25,7 @@ func Load() (*Config, error) {
 		ConfirmationQueue: getEnv("CONFIRMATION_QUEUE", "file_copy_confirmation_queue"),
 		NumberOfWorkers:   getEnvInt("NUMBER_OF_WORKERS", 10),
 		Port:              getEnv("SERVER_PORT", "8080"),
+		LogFilePath:       getEnv("LOG_FILE_PATH", ""),
 	}, nil
 }
 
@@ -41,4 +45,17 @@ func getEnvInt(key string, defaultValue int) int {
 		return val
 	}
 	return defaultValue
+}
+
+func (c *Config) SetupLogging() error {
+	if c.LogFilePath != "" {
+		file, err := os.OpenFile(c.LogFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		if err != nil {
+			return err
+		}
+		
+		multiWriter := io.MultiWriter(os.Stdout, file)
+		log.SetOutput(multiWriter)
+	}
+	return nil
 }
