@@ -13,6 +13,11 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
+	// Setup logging
+	if err := cfg.SetupLogging(); err != nil {
+		log.Fatalf("Failed to setup logging: %v", err)
+	}
+
 	// Start the API server
 	if err := api.StartServer(cfg); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
