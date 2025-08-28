@@ -50,6 +50,10 @@ func workerService(id uuid.UUID, cfg *config.Config, jobs <-chan FileTask, wg *s
 				status = "success"
 				message = fmt.Sprintf("File deleted successfully: %s", req.Source)
 			}
+		default:
+			log.Printf("Unknown task type: %s", req.Type)
+			status = "fail"
+			message = fmt.Sprintf("Unknown task type: %s, request: %+v", req.Type, req)
 		}
 
 		// Publish response back to RabbitMQ
