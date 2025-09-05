@@ -15,11 +15,12 @@ type TaskType string
 const (
 	TaskCopy   TaskType = "COPY"
 	TaskDelete TaskType = "DELETE"
+	TaskExists TaskType = "EXISTS"
 )
 
 type FileTask struct {
 	ID          uuid.UUID `json:"id"`
-	Type        TaskType  `json:"type"` // COPY or DELETE
+	Type        TaskType  `json:"type"` // COPY, DELETE, or EXISTS
 	Source      string    `json:"source"`
 	Destination string    `json:"destination,omitempty"` // Only needed for COPY
 }
