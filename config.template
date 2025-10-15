@@ -1,0 +1,7 @@
+RABBITMQ_URL=<RABBITMQ_URL> # amqp://{username}:{password}@{url}:{port}/
+API_TOKEN=<API_TOKEN> # Used for authentication for REST endpoints
+FILE_TASK_QUEUE=<FILE_TASK_QUEUE>
+CONFIRMATION_QUEUE=<CONFIRMATION_QUEUE>
+ECHO_MOUNT=<Mount directories>
+NUMBER_OF_WORKERS=<NUMBER_OF_WORKERS>
+SERVER_PORT="<SERVER_PORT>"
