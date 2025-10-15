@@ -14,6 +14,8 @@ services:
       - CONFIRMATION_QUEUE=${CONFIRMATION_QUEUE}
       - SERVER_PORT=${SERVER_PORT}
       - LOG_FILE_PATH=${LOG_FILE_PATH}
+    volumes:
+      - ${ECHO_MOUNT}:${ECHO_MOUNT}:rw
 
   worker:
     build:

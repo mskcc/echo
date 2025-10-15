@@ -50,6 +50,11 @@ func workerService(id uuid.UUID, cfg *config.Config, jobs <-chan FileTask, wg *s
 				status = "success"
 				message = fmt.Sprintf("File deleted successfully: %s", req.Source)
 			}
+		case TaskExists:
+			exists := fileExists(req.Source)
+			log.Printf("File existence check: %s -> %t", req.Source, exists)
+			status = "success"
+			message = fmt.Sprintf("File %s exists: %t", req.Source, exists)
 		default:
 			log.Printf("Unknown task type: %s", req.Type)
 			status = "fail"
@@ -101,4 +106,9 @@ func deleteFile(src string) error {
 		return err
 	}
 	return nil
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }
